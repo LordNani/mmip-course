@@ -3,7 +3,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.29503.13
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ZoomImage", "MMOZ_ZoomImage.vcxproj", "{A9B24063-5942-47BC-8DF3-CDCADBB36604}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ZoomImage", "MMOZ_ZoomImage\MMOZ_ZoomImage.vcxproj", "{A9B24063-5942-47BC-8DF3-CDCADBB36604}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "HistogramEqualization", "HistogramEqualization\HistogramEqualization.vcxproj", "{A591F520-B617-42EF-9AE5-4E8695B22FEF}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -21,6 +23,14 @@ Global
 		{A9B24063-5942-47BC-8DF3-CDCADBB36604}.Release|x64.Build.0 = Release|x64
 		{A9B24063-5942-47BC-8DF3-CDCADBB36604}.Release|x86.ActiveCfg = Release|Win32
 		{A9B24063-5942-47BC-8DF3-CDCADBB36604}.Release|x86.Build.0 = Release|Win32
+		{A591F520-B617-42EF-9AE5-4E8695B22FEF}.Debug|x64.ActiveCfg = Debug|x64
+		{A591F520-B617-42EF-9AE5-4E8695B22FEF}.Debug|x64.Build.0 = Debug|x64
+		{A591F520-B617-42EF-9AE5-4E8695B22FEF}.Debug|x86.ActiveCfg = Debug|Win32
+		{A591F520-B617-42EF-9AE5-4E8695B22FEF}.Debug|x86.Build.0 = Debug|Win32
+		{A591F520-B617-42EF-9AE5-4E8695B22FEF}.Release|x64.ActiveCfg = Release|x64
+		{A591F520-B617-42EF-9AE5-4E8695B22FEF}.Release|x64.Build.0 = Release|x64
+		{A591F520-B617-42EF-9AE5-4E8695B22FEF}.Release|x86.ActiveCfg = Release|Win32
+		{A591F520-B617-42EF-9AE5-4E8695B22FEF}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

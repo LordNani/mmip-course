@@ -1,20 +1,101 @@
-// HistogramEqualization.cpp : This file contains the 'main' function. Program execution begins and ends there.
-//
-
 #include <iostream>
+#include <opencv2/core/core.hpp>
+#include <opencv2/highgui/highgui.hpp>
+
+using namespace cv;
+
+void decrease(const Mat in_image, Mat& out_image, int n = 2)
+{
+    //Bilinear implementation of downscaling, done by Roman Gaivoronskyi
+    float x_diff, y_diff;
+
+    int upPixel, rightPixel, downPixel, leftPixel, x, y, currentPixel;
+    int offset = 0;
+    for (int i = 0; i < out_image.rows; i++) {
+        for (int j = 0; j < out_image.cols; j++) {
+
+            x = n * j;
+            y = n * i;
+            x_diff = n * j - x;
+            y_diff = n * i - y;
+            currentPixel = y * in_image.cols + x;
+
+            upPixel = in_image.data[currentPixel];
+            rightPixel = in_image.data[currentPixel + 1];
+            downPixel = in_image.data[currentPixel + in_image.cols];
+            leftPixel = in_image.data[currentPixel + in_image.cols + 1];
+
+            out_image.data[offset] = (int)(upPixel * (1 - x_diff) * (1 - y_diff) + rightPixel * (x_diff) * (1 - y_diff) + downPixel * (y_diff) * (1 - x_diff) + leftPixel * (x_diff * y_diff));
+            ++offset;
+            //std::cout << "row = " << i << ", col = " << j << std::endl;
+        }
+    }
+}
+
+void increase(const Mat in_image, Mat& out_image, int n = 2)
+{
+    //Bilinear implementation of upscaling, done by Roman Gaivoronskyi
+    float x_diff, y_diff;
+
+    int upPixel, rightPixel, downPixel, leftPixel, x, y, currentPixel;
+    int offset = 0;
+	float resizeRatio = (float) 1 / n;
+	//std::cout << resizeRatio << std::endl;
+    for (int i = 0; i < out_image.rows; i++) {
+        for (int j = 0; j < out_image.cols; j++) {
+
+            x = resizeRatio * j;
+            y = resizeRatio * i;
+            x_diff = resizeRatio * j - x;
+            y_diff = resizeRatio * i - y;
+            currentPixel = y * in_image.cols + x;
+
+            upPixel = in_image.data[currentPixel];
+            rightPixel = in_image.data[currentPixel + 1];
+            downPixel = in_image.data[currentPixel + in_image.cols];
+            leftPixel = in_image.data[currentPixel + in_image.cols + 1];
+
+            //std::cout << "gray = " << (int)(upPixel * (1 - x_diff) * (1 - y_diff) + rightPixel * (x_diff) * (1 - y_diff) + downPixel * (y_diff) * (1 - x_diff) + leftPixel * (x_diff * y_diff)) << '\n';
+            out_image.data[offset] = (int)(upPixel * (1 - x_diff) * (1 - y_diff) + rightPixel * (x_diff) * (1 - y_diff) + downPixel * (y_diff) * (1 - x_diff) + leftPixel * (x_diff * y_diff));
+            ++offset;
+            //std::cout << "row = " << i << ", col = " << j << std::endl;
+        }
+    }
+
+}
+
+//change it to decrease
+const bool UPSCALE = true;
 
 int main()
 {
-    std::cout << "Hello World!\n";
+    std::string firstWindowName = "Before";
+    std::string secondWindowName = "After";
+    std::string imageNames[] = { "IM0.jpg", "IM1.tif", "IM_CAT.png", "IM10.tif", "IM8.tif", "IM23.tif", "IM17.tif", "IM13.tif", "IM11.tif" };
+
+    Mat img = imread("C:/Users/Lord/source/repos/Tif/" + imageNames[0], 0);
+    Mat newImg;
+    if (img.data == 0) // Check for invalid input
+    {
+        std::cout << "Could not open or find the image" << std::endl;
+        return -1;
+    }
+
+    std::cout << "Original image dimensionIOAWFVBOIYAWVBFIOYs : " << img.cols << 'x' << img.rows << std::endl;
+
+    if (!UPSCALE) {
+        newImg = Mat(img.rows * 2, img.cols * 2, CV_8UC1, Scalar(0));
+        std::cout << "Edited image dimensions : " << newImg.cols << 'x' << newImg.rows << std::endl;
+        increase(img, newImg);
+    } else {
+        newImg = Mat(img.rows / 2, img.cols / 2, CV_8UC1, Scalar(0));
+        std::cout << "Edited image dimensions : " << newImg.cols << 'x' << newImg.rows << std::endl;
+        decrease(img, newImg);
+    }
+
+    imshow(firstWindowName, img);
+    imshow(secondWindowName, newImg);
+    waitKey(0);
+    system("pause");
+    return 0;
 }
-
-// Run program: Ctrl + F5 or Debug > Start Without Debugging menu
-// Debug program: F5 or Debug > Start Debugging menu
-
-// Tips for Getting Started: 
-//   1. Use the Solution Explorer window to add/manage files
-//   2. Use the Team Explorer window to connect to source control
-//   3. Use the Output window to see build output and other messages
-//   4. Use the Error List window to view errors
-//   5. Go to Project > Add New Item to create new code files, or Project > Add Existing Item to add existing code files to the project
-//   6. In the future, to open this project again, go to File > Open > Project and select the .sln file
