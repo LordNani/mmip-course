@@ -1,100 +1,102 @@
+#include "opencv2/imgproc.hpp"
 #include <iostream>
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
+#include <map>
+#define NDEBUG 0
 
 using namespace cv;
+using namespace std;
 
-void decrease(const Mat in_image, Mat& out_image, int n = 2)
+void HistogramEqualization(const Mat& in_image, Mat& out_image, Mat& in_histogram, Mat& out_histogram)
 {
-    //Bilinear implementation of downscaling, done by Roman Gaivoronskyi
-    float x_diff, y_diff;
+	map<size_t, float> intensityMap;
+	float totalPixel = in_image.cols * in_image.rows;
+	for (size_t i = 0; i < 256; i++)
+	{
+		intensityMap.insert(make_pair(i, 0));
+	}
 
-    int upPixel, rightPixel, downPixel, leftPixel, x, y, currentPixel;
-    int offset = 0;
-    for (int i = 0; i < out_image.rows; i++) {
-        for (int j = 0; j < out_image.cols; j++) {
+	//counting pixels intensity
+	for (int i = 0; i <(int) totalPixel; i++)
+	{
+		++intensityMap[in_image.data[i]];
+	}
 
-            x = n * j;
-            y = n * i;
-            x_diff = n * j - x;
-            y_diff = n * i - y;
-            currentPixel = y * in_image.cols + x;
+	if (!NDEBUG) {
+		int pixelCheckSum = 0;
+		for (auto elem : intensityMap)
+		{
+			cout << elem.first << " color =  " << elem.second << "\n";
+			pixelCheckSum += elem.second;
+		}
+		cout << "checksum: " << pixelCheckSum << endl;
+	}
 
-            upPixel = in_image.data[currentPixel];
-            rightPixel = in_image.data[currentPixel + 1];
-            downPixel = in_image.data[currentPixel + in_image.cols];
-            leftPixel = in_image.data[currentPixel + in_image.cols + 1];
+	// intensity => PMF => CDF
+	float cumulitiveValue = 0;
+	for (size_t i = 0; i < 256; i++)
+	{
+		
+		intensityMap[i] = intensityMap[i] / totalPixel + cumulitiveValue;
+		if (intensityMap[i] > 1)
+			intensityMap[i] = 1;
 
-            out_image.data[offset] = (int)(upPixel * (1 - x_diff) * (1 - y_diff) + rightPixel * (x_diff) * (1 - y_diff) + downPixel * (y_diff) * (1 - x_diff) + leftPixel * (x_diff * y_diff));
-            ++offset;
-            //std::cout << "row = " << i << ", col = " << j << std::endl;
-        }
-    }
-}
+		cumulitiveValue = intensityMap[i];
+		if (!NDEBUG) 
+			cout << "Pixel color " << i << "= CDF " << intensityMap[i] << "\n";
+	}
 
-void increase(const Mat in_image, Mat& out_image, int n = 2)
-{
-    //Bilinear implementation of upscaling, done by Roman Gaivoronskyi
-    float x_diff, y_diff;
-
-    int upPixel, rightPixel, downPixel, leftPixel, x, y, currentPixel;
-    int offset = 0;
-	float resizeRatio = (float) 1 / n;
-	//std::cout << resizeRatio << std::endl;
-    for (int i = 0; i < out_image.rows; i++) {
-        for (int j = 0; j < out_image.cols; j++) {
-
-            x = resizeRatio * j;
-            y = resizeRatio * i;
-            x_diff = resizeRatio * j - x;
-            y_diff = resizeRatio * i - y;
-            currentPixel = y * in_image.cols + x;
-
-            upPixel = in_image.data[currentPixel];
-            rightPixel = in_image.data[currentPixel + 1];
-            downPixel = in_image.data[currentPixel + in_image.cols];
-            leftPixel = in_image.data[currentPixel + in_image.cols + 1];
-
-            //std::cout << "gray = " << (int)(upPixel * (1 - x_diff) * (1 - y_diff) + rightPixel * (x_diff) * (1 - y_diff) + downPixel * (y_diff) * (1 - x_diff) + leftPixel * (x_diff * y_diff)) << '\n';
-            out_image.data[offset] = (int)(upPixel * (1 - x_diff) * (1 - y_diff) + rightPixel * (x_diff) * (1 - y_diff) + downPixel * (y_diff) * (1 - x_diff) + leftPixel * (x_diff * y_diff));
-            ++offset;
-            //std::cout << "row = " << i << ", col = " << j << std::endl;
-        }
-    }
 
 }
 
-//change it to decrease
-const bool UPSCALE = true;
+Mat computeHistogram(Mat& input_image)
+{
+
+    Mat histogram;
+    int channels[] = { 0 };
+    int histSize[] = { 256 };
+    float range[] = { 0, 256 };
+    const float* ranges[] = { range };
+
+    calcHist(&input_image, 1, channels, Mat(), histogram, 1, histSize, ranges);
+
+    double max_val = 0;
+    minMaxLoc(histogram, 0, &max_val);
+
+    cv::Mat3b hist_image = cv::Mat3b::zeros(256, 256);
+
+    // visualize each bin
+    for (int b = 0; b < 256; b++) {
+        float const binVal = histogram.at<float>(b);
+        int const height = cvRound(binVal);
+        cv::line(hist_image, cv::Point(b, 256 - height), cv::Point(b, 256), cv::Scalar::all(255));
+    }
+
+    return hist_image;
+}
+
 
 int main()
 {
-    std::string firstWindowName = "Before";
-    std::string secondWindowName = "After";
-    std::string imageNames[] = { "IM0.jpg", "IM1.tif", "IM_CAT.png", "IM10.tif", "IM8.tif", "IM23.tif", "IM17.tif", "IM13.tif", "IM11.tif" };
+    string imageNames[] = { "IM0.jpg", "IM1.tif", "IM_CAT.png","smallGradient.jpg", "IM10.tif", "IM8.tif", "IM23.tif", "IM17.tif", "IM13.tif", "IM11.tif" };
 
-    Mat img = imread("C:/Users/Lord/source/repos/Tif/" + imageNames[0], 0);
-    Mat newImg;
+    Mat img = imread("C:/Users/Lord/source/repos/Tif/" + imageNames[3], 0);
+    Mat newImg(img.rows, img.cols, CV_8UC1, Scalar(0));
+
     if (img.data == 0) // Check for invalid input
     {
-        std::cout << "Could not open or find the image" << std::endl;
+        cout << "Could not open or find the image" << endl;
         return -1;
     }
+    cout << "Original image dimensions : " << img.cols << 'x' << img.rows << endl;
 
-    std::cout << "Original image dimensionIOAWFVBOIYAWVBFIOYs : " << img.cols << 'x' << img.rows << std::endl;
+    /*displayHistogram(img);*/
 
-    if (!UPSCALE) {
-        newImg = Mat(img.rows * 2, img.cols * 2, CV_8UC1, Scalar(0));
-        std::cout << "Edited image dimensions : " << newImg.cols << 'x' << newImg.rows << std::endl;
-        increase(img, newImg);
-    } else {
-        newImg = Mat(img.rows / 2, img.cols / 2, CV_8UC1, Scalar(0));
-        std::cout << "Edited image dimensions : " << newImg.cols << 'x' << newImg.rows << std::endl;
-        decrease(img, newImg);
-    }
-
-    imshow(firstWindowName, img);
-    imshow(secondWindowName, newImg);
+    imshow("histogramBefore", computeHistogram(img));
+    imshow("imageBefore", img);
+	HistogramEqualization(img, newImg, newImg, newImg);
+    //imshow(secondWindowName, newImg);
     waitKey(0);
     system("pause");
     return 0;
