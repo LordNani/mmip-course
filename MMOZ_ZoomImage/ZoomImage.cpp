@@ -4,6 +4,9 @@
 
 using namespace cv;
 
+//change it to decrease
+const bool UPSCALE = false;
+
 void decrease(const Mat in_image, Mat& out_image, int n = 2)
 {
     //Bilinear implementation of downscaling, done by Roman Gaivoronskyi
@@ -64,16 +67,14 @@ void increase(const Mat in_image, Mat& out_image, int n = 2)
 
 }
 
-//change it to decrease
-const bool UPSCALE = true;
 
 int main()
 {
     std::string firstWindowName = "Before";
     std::string secondWindowName = "After";
-    std::string imageNames[] = { "IM0.jpg", "IM1.tif", "IM_CAT.png", "IM10.tif", "IM8.tif", "IM23.tif", "IM17.tif", "IM13.tif", "IM11.tif" };
+	std::string imageNames[] = { "IM0.jpg", "IM1.tif", "IM_CAT.png","smallGradient.jpg", "IM10.tif", "IM8.tif", "IM23.tif", "IM17.tif", "IM13.tif", "IM11.tif" };
 
-    Mat img = imread("C:/Users/Lord/source/repos/Tif/" + imageNames[0], 0);
+    Mat img = imread("C:/Users/Lord/source/repos/Tif/" + imageNames[3], 0);
     Mat newImg;
     if (img.data == 0) // Check for invalid input
     {
