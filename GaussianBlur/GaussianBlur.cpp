@@ -29,33 +29,23 @@ static void on_trackbar_change(int, void* = 0)
     imshow("Gaussian blur", changedImg);
 }
 
-//Mat fitToKernel(const Mat& in_image, int ksize)
-//{
-//    int halfKernel = ksize / 2;
-//    cout << "halfKernel = " << halfKernel << endl;
-//    Mat fixedImg = Mat(img.rows + 2 * halfKernel, img.cols + 2 * halfKernel, CV_8UC1, Scalar(255));
-//
-//    cout << "in_image.cols * in_image.rows = " << in_image.cols * in_image.rows << endl;
-//
-//    int offset = halfKernel * in_image.cols + halfKernel;
-//    cout << "offset = " << offset << endl;
-//    int accum = 0;
-//    for (int i = 0; i < in_image.cols * in_image.rows; i++) {
-//        //fixedImg.data[i + halfKernel * in_image.cols + halfKernel] = in_image.data[i];
-//
-//        if (i % in_image.cols + 1 >= in_image.cols) {
-//            accum = 2;
-//            cout << " edge pixel, i = " << i << endl;
-//        } else
-//            accum = 0;
-//        int test = i + offset + accum;
-//        fixedImg.data[test] = in_image.data[i];
-//        //cout << "PixelNum = " << i + halfKernel * in_image.cols + halfKernel << '\n';
-//        //cout.flush();
-//    }
-//
-//    return fixedImg;
-//}
+void convolution(const Mat& in_image, const double* mask, int ksize, double koef, Mat& out_image)
+{
+	double temp = 0;
+	int hk = ksize / 2; // floor(ksize/2)
+
+	for (int i = 1; i < in_image.rows - 1; ++i) {
+		for (int j = 1; j < in_image.cols - 1; ++j) {
+			for (int ik = 0; ik < ksize; ++ik) {
+				for (int jk = 0; jk < ksize; ++jk) {
+					//calculating new pixel value
+					temp += mask[ik * ksize + jk] * in_image.data[(i + hk - ik) * in_image.rows + (j + hk - jk)];
+				}
+			}
+			out_image.data[i * in_image.rows + j] = (int)temp / koef;
+		}
+	}
+}
 
 void GaussianBlur(const Mat& in_image, Mat& out_image, const int ksize, double sigma)
 {
@@ -65,15 +55,14 @@ void GaussianBlur(const Mat& in_image, Mat& out_image, const int ksize, double s
     for (int i = 0; i < ksize; ++i) {
         for (int j = 0; j < ksize; ++j) {
             mask[i * ksize + j] = exp(-1 * (pow((i - hk), 2) + pow((j - hk), 2)) / (2 * pow(sigma, 2))) / (2 * M_PI * pow(sigma, 2));
-			cout << mask[i * ksize + j] << "  ";
+            cout << mask[i * ksize + j] << "  ";
         }
-		cout << endl;
+        cout << endl;
     }
+
+	convolution(in_image, mask, ksize, 1, out_image);
 }
 
-void convolution(const Mat& in_image, const double* mask, int ksize, double koef, Mat& out_image)
-{
-}
 
 int main()
 {
@@ -92,12 +81,12 @@ int main()
 
     namedWindow("Gaussian blur", WINDOW_AUTOSIZE);
     resizeWindow("Gaussian blur", changedImg.cols, changedImg.rows);
-    createTrackbar("Blur sigma", "Gaussian blur", &sliderValue, sliderValueMax, on_trackbar_change);
+    //createTrackbar("Blur sigma", "Gaussian blur", &sliderValue, sliderValueMax, on_trackbar_change);
 
-	GaussianBlur(img, changedImg, 3, 0.75);
+    GaussianBlur(img, changedImg, 3, 0.75);
     //std::cout << "Fit image dimensions : " << newImg.cols << 'x' << newImg.rows << std::endl;
     imshow("Gaussian blur", changedImg);
-    on_trackbar_change(sliderValue);
+    //on_trackbar_change(sliderValue);
 
     waitKey(0);
     system("pause");
