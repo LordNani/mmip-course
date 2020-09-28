@@ -8,8 +8,10 @@
 using namespace cv;
 using namespace std;
 
-const int sliderValueMax = 5;
-int sliderValue = 0;
+const int ksizeSliderMax = 5;
+int ksizeSlider = 0;
+const int sigmaSliderMax = 20;
+int sigmaSlider = 0;
 Mat img, changedImg,changedImg2;
 
 void convolution(const Mat& in_image, const double* mask, int ksize, double koef, Mat& out_image)
@@ -23,7 +25,6 @@ void convolution(const Mat& in_image, const double* mask, int ksize, double koef
 				for (int jk = 0; jk < ksize; ++jk) {
 					//calculating new pixel value
 					temp += mask[ik * ksize + jk] * in_image.data[(i + hk - ik) * in_image.cols + (j + hk - jk)];
-					//cout << "Pixel: " << (i + hk - ik) * in_image.cols + (j + hk - jk) << endl;
 				}
 			}
 			//cout <<"new value for pixel: " <<  (int)temp / koef << endl;
@@ -40,35 +41,50 @@ void myGaussianBlur(const Mat& in_image, Mat& out_image, const int ksize, double
 	double denumMain = 2.0 * M_PI * pow(sigma, 2);
 	double denumEuler = 2.0 * pow(sigma, 2);
 	double dist = 0;
+	double sum = 0;
 	for (int i = 0; i < ksize; ++i) {
 		for (int j = 0; j < ksize; ++j) {
 			dist = pow((i - hk), 2) + pow((j - hk), 2);
 			cout << dist << endl;
 			mask[i * ksize + j] = exp(-1.0 * ( dist / denumEuler) ) / denumMain ;
-			cout << mask[i * ksize + j] << "  ";
+			sum += mask[i * ksize + j];
+			//cout << mask[i * ksize + j] << "  ";
 		}
 		cout << endl;
+	}
+	
+	for (int i = 0; i < ksize * ksize; ++i) {
+		mask[i] /= sum;
+		cout << mask[i] << "  " << endl;
 	}
 
 	convolution(in_image, mask, ksize, 1, out_image);
 }
 
+
 static void on_trackbar_change(int, void* = 0)
 {
-	int sizeVal = ((double)sliderValue / sliderValueMax) * 9;
-	cout << sizeVal << "\n";
-	if (sizeVal % 2 == 0)
-		sizeVal++;
+	int ksizeVal = ((double)ksizeSlider / ksizeSliderMax) * 9;
+	double sigmaVal = ((double)sigmaSlider / sigmaSliderMax) * 5;
+	cout << "ksize = " << ksizeVal << ", sigma = " << sigmaVal << "\n";
+	if (ksizeVal % 2 == 0)
+		ksizeVal++;
 
-	myGaussianBlur(img, changedImg, sizeVal, 0.75);
+	myGaussianBlur(img, changedImg, ksizeVal, sigmaVal);
 
 	ostringstream kernelSizeText;
-	kernelSizeText << "Sigma = " << sizeVal;
-	putText(changedImg, kernelSizeText.str(), Point(30, 30),
+	kernelSizeText << "ksize = " << ksizeVal << ", sigma = " << sigmaVal;
+	putText(changedImg, kernelSizeText.str(), Point(20, 30),
 		FONT_HERSHEY_SIMPLEX, 0.9, 220, 2);
 
 	imshow("Gaussian blur", changedImg);
 }
+
+static void on_trackbar_change2(int, void* = 0){
+	on_trackbar_change(ksizeSlider);
+}
+
+
 
 int main()
 {
@@ -88,13 +104,12 @@ int main()
 
 	namedWindow("Gaussian blur", WINDOW_AUTOSIZE);
 	resizeWindow("Gaussian blur", changedImg.cols, changedImg.rows);
-	//createTrackbar("KernelSize", "Gaussian blur", &sliderValue, sliderValueMax, on_trackbar_change);
+	createTrackbar("KernelSize", "Gaussian blur", &ksizeSlider, ksizeSliderMax, on_trackbar_change);
+	createTrackbar("Sigma", "Gaussian blur", &sigmaSlider, sigmaSliderMax, on_trackbar_change2);
 
-	myGaussianBlur(img, changedImg, 5, 0.73);
-	GaussianBlur(img,changedImg2,Size(3,3), 2);imshow("Gaussian blur", changedImg);
-	imshow("Gaussian blur REAL", changedImg2);
-	//on_trackbar_change(sliderValue);
-
+	//GaussianBlur(img,changedImg2,Size(5,5), 2);imshow("Gaussian blur", changedImg);
+	//imshow("Gaussian blur REAL", changedImg2);
+	imshow("Gaussian blur", changedImg);
 	waitKey(0);
 	system("pause");
 	return 0;
