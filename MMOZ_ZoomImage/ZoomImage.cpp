@@ -4,8 +4,7 @@
 
 using namespace cv;
 
-//change it to decrease
-const bool UPSCALE = false;
+
 
 void decrease(const Mat in_image, Mat& out_image, int n = 2)
 {
@@ -67,12 +66,14 @@ void increase(const Mat in_image, Mat& out_image, int n = 2)
 
 }
 
+//change it to decrease
+const bool UPSCALE = 0;
 
 int main()
 {
     std::string firstWindowName = "Before";
     std::string secondWindowName = "After";
-	std::string imageNames[] = { "IM0.jpg", "IM1.tif", "IM_CAT.png","smallGradient.jpg", "IM10.tif", "IM8.tif", "IM23.tif", "IM17.tif", "IM13.tif", "IM11.tif" };
+	std::string imageNames[] = { "Geneva.tif", "norway.jpg", "bigGradient.jpg", "portrait.jpg", "test.png", "anime.jpg", "IM23.tif", "IM17.tif", "IM13.tif", "IM11.tif" };
 
     Mat img = imread("C:/Users/Lord/source/repos/Tif/" + imageNames[3], 0);
     Mat newImg;
@@ -84,7 +85,7 @@ int main()
 
     std::cout << "Original image dimensions : " << img.cols << 'x' << img.rows << std::endl;
 
-    if (!UPSCALE) {
+    if (UPSCALE) {
         newImg = Mat(img.rows * 2, img.cols * 2, CV_8UC1, Scalar(0));
         std::cout << "Edited image dimensions : " << newImg.cols << 'x' << newImg.rows << std::endl;
         increase(img, newImg);
