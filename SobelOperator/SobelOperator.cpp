@@ -1,4 +1,5 @@
 #include "opencv2/imgproc.hpp"
+#include "tinyfiledialogs.h"
 #include <corecrt_math_defines.h>
 #include <iostream>
 #include <math.h>
@@ -29,7 +30,7 @@ void convolution(const Mat& in_image, const double* mask, int ksize, double koef
                 }
             }
             //cout <<"new value for pixel: " <<  (int)temp / koef << endl;
-			temp = abs(temp * koef) > 255 ? 255 : abs(temp * koef);
+            temp = abs(temp * koef) > 255 ? 255 : abs(temp * koef);
             out_image.data[i * in_image.cols + j] = (int)temp;
             temp = 0;
         }
@@ -65,41 +66,39 @@ void myGaussianBlur(const Mat& in_image, Mat& out_image, const int ksize, double
 void SobelOperator(const Mat& in_image, Mat& out_image)
 {
     Mat blurredImg, verticalSobel, horizontalSobel;
-	blurredImg = in_image.clone();
-	verticalSobel = in_image.clone();
-	horizontalSobel = in_image.clone();
+    blurredImg = in_image.clone();
+    verticalSobel = in_image.clone();
+    horizontalSobel = in_image.clone();
 
     const double sigma = 0.73;
-    const double xMask[] =
-		{ -1, 0, 1,
-		-2, 0, 2,
-		-1, 0, 1 };
-	const double yMask[] =
-	{ -1, -2,-1,
-	0, 0, 0,
-	1, 2, 1 };
-	const double koef = 0.25;
+    const double xMask[] = { -1, 0, 1,
+        -2, 0, 2,
+        -1, 0, 1 };
+    const double yMask[] = { -1, -2, -1,
+        0, 0, 0,
+        1, 2, 1 };
+    const double koef = 0.25;
 
-	myGaussianBlur(in_image, blurredImg, 5, sigmaValue);
-	//imshow("Gaussian", blurredImg);
-	convolution(blurredImg, xMask, 3, koef, horizontalSobel);
-	convolution(blurredImg, yMask, 3, koef, verticalSobel);
-	//imshow("Horizontal Sobel", horizontalSobel);
-	//imshow("Vertical Sobel", verticalSobel);
-	for (int i = 0; i < out_image.cols * out_image.rows; ++i) {
-		out_image.data[i] = sqrt(pow(verticalSobel.data[i], 2) + pow(horizontalSobel.data[i], 2));
-	}
+    myGaussianBlur(in_image, blurredImg, 5, sigmaValue);
+    //imshow("Gaussian", blurredImg);
+    convolution(blurredImg, xMask, 3, koef, horizontalSobel);
+    convolution(blurredImg, yMask, 3, koef, verticalSobel);
+    //imshow("Horizontal Sobel", horizontalSobel);
+    //imshow("Vertical Sobel", verticalSobel);
+    for (int i = 0; i < out_image.cols * out_image.rows; ++i) {
+        out_image.data[i] = sqrt(pow(verticalSobel.data[i], 2) + pow(horizontalSobel.data[i], 2));
+    }
 }
 
 static void on_trackbar_change(int, void* = 0)
 {
     //int ksizeVal = ((double)ksizeSlider / ksizeSliderMax) * 9;
-	sigmaValue = ((double)sigmaSlider / sigmaSliderMax) * 2;
+    sigmaValue = ((double)sigmaSlider / sigmaSliderMax) * 2;
     cout << "sigma" << sigmaValue << "\n";
-	imshow("Original", img);
+    imshow("Original", img);
 
-	SobelOperator(img, changedImg);
-	imshow("Sobel", changedImg);
+    SobelOperator(img, changedImg);
+    imshow("Sobel", changedImg);
 }
 
 //static void on_trackbar_change2(int, void* = 0)
@@ -110,8 +109,16 @@ static void on_trackbar_change(int, void* = 0)
 int main()
 {
     std::cout.sync_with_stdio(false);
-    std::string imageNames[] = { "Geneva.tif", "norway.jpg", "artem_1.jpg", "portrait.jpg", "test.png", "anime.jpg", "IM23.tif", "IM17.tif", "IM13.tif", "IM11.tif" };
-    img = imread("C:/Users/Lord/source/repos/Tif/" + imageNames[5], 0);
+    std::string imageNames[] = { "Geneva.tif", "norway.jpg", "artem_1.jpg", "portrait.jpg", "asya.jpg", "anime.jpg", "IM23.tif", "IM17.tif", "IM13.tif", "IM11.tif" };
+    string selectedFile = tinyfd_openFileDialog(
+        "Select Image", // NULL or ""
+        "", // NULL or ""
+        0, // 0
+        NULL, // NULL {"*.jpg","*.png"}
+        "pictures", // NULL | "image files"
+        0);
+    //img = imread("C:/Users/Lord/source/repos/Tif/" + imageNames[5], 0);
+    img = imread(selectedFile, 0);
     changedImg = img.clone();
 
     if (img.data == 0) // Check for invalid input
@@ -130,7 +137,7 @@ int main()
     imshow("Original", img);
     //imshow("Gaussian blur", changedImg);
 
-	SobelOperator(img, changedImg);
+    SobelOperator(img, changedImg);
     imshow("Sobel", changedImg);
 
     waitKey(0);
