@@ -7,13 +7,21 @@
 #include <math.h>
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
+#include "PB.h"
 
 using namespace cv;
 using namespace std;
 
-Mat img, changedImg;
-const double GAUSS_SIGMA = 0.5;
+const int WORK_MODE = 3;
+
+Mat img, changedImg, gsImg;
+const double GAUSS_SIGMA = 1;
 const double KOEF = 0.25;
+
+int silderMinVal = 0, silderMaxVal = 0;
+double minVal = 0, maxVal = 0;
+int silderMax = 20;
+
 
 void convolution(const Mat& in_image, const double* mask, int ksize, double koef, Mat& out_image)
 {
@@ -88,128 +96,189 @@ void modifiedSobelOperator(const Mat& in_image, Mat& out_image, vector<PVector>&
 
 bool isCorrectPos(int rows, int cols, int posY, int posX)
 {
-	//cout << "Rows: " << rows << ", Cols:" << cols << ", PosX: " << posY + posX << ", PosY: " << rows * cols << endl;
-	
-    if (posY/cols > rows || posX > cols || posY + posX >= rows * cols || posY + posX < 0)
+    //cout << "Rows: " << rows << ", Cols:" << cols << ", PosX: " << posY + posX << ", PosY: " << rows * cols << endl;
+
+    if (posY / cols > rows || posX > cols || posY + posX >= rows * cols || posY + posX < 0)
         return false;
     else
         return true;
 }
 
-void CannyEdge(const Mat& in_image, Mat& out_image)
+void CannyEdge(const Mat& in_image, Mat& out_image, double min, double max)
 {
-    Mat temp = in_image.clone();
-    int r = in_image.rows;
-    int c = in_image.cols;
-    int dir = 0;  // direction from 0 to 7, where i = i.angle / 45
-    double max = 0, min = 0; // double thresholds
-    PVector A, B, C;
-    vector<PVector> pvectors;
+	Mat temp = in_image.clone();
+	int r = in_image.rows;
+	int c = in_image.cols;
+	int dir = 0; // direction from 0 to 7, where i = i.angle / 45
+	PVector A, B, C;
+	vector<PVector> pvectors;
 
-    pvectors.resize(r * c);
-    modifiedSobelOperator(in_image, temp, pvectors);
-	imshow("Before surpression", temp);
+	pvectors.resize(r * c);
+	modifiedSobelOperator(in_image, temp, pvectors);
+	//imshow("Before surpression", temp);
 
-    for (int i = 0; i < r; ++i) {
-        for (int j = 0; j < c; ++j) {
-			C = pvectors.at(i * c + j);
-            dir = C.getDir();
-			
-			if (C.getMag() > max) {
-				max = C.getMag();
-				//cout << "NEW MAX = " << max << endl;
-			}
-
-            switch (dir) {
-            case 0:
-            case 4:
-                A = isCorrectPos(r, c, i * c, j - 1) ? A = pvectors.at(i * c + j - 1) : PVector();
-                B = isCorrectPos(r, c, i * c, j + 1) ? A = pvectors.at(i * c + j + 1) : PVector();
-                break;
-            case 1:
-            case 5:
-                A = isCorrectPos(r, c, i * (c - 1), j + 1) ? A = pvectors.at(i * (c - 1) + j + 1) : PVector();
-                B = isCorrectPos(r, c, i * (c + 1), j - 1) ? A = pvectors.at(i * (c + 1) + j - 1) : PVector();
-                break;
-            case 2:
-            case 6:
-                A = isCorrectPos(r, c, i * (c - 1), j) ? A = pvectors.at(i * (c - 1) + j) : PVector();
-                B = isCorrectPos(r, c, i * (c + 1), j) ? A = pvectors.at(i * (c + 1) + j) : PVector();
-                break;
-            case 3:
-            case 7:
-                A = isCorrectPos(r, c, i * (c - 1), j - 1) ? A = pvectors.at(i * (c - 1) + j - 1) : PVector();
-                B = isCorrectPos(r, c, i * (c + 1), j + 1) ? A = pvectors.at(i * (c + 1) + j + 1) : PVector();
-                break;
-            }
-
-			out_image.data[i * r + j] = A.getMag() > C.getMag() || B.getMag() > C.getMag() ? 0 : temp.data[i * c + j];
-        }
-    }
-
-	min = max * 0.1;
-	max = max * 0.5;
 	for (int i = 0; i < r; ++i) {
 		for (int j = 0; j < c; ++j) {
 			C = pvectors.at(i * c + j);
-			if (C.getMag() < min)  //WEAK PIXEL
+			dir = C.getDir();
+
+			switch (dir) {
+			case 0:
+			case 4:
+				A = isCorrectPos(r, c, i * c, j - 1) ? A = pvectors.at(i * c + j - 1) : PVector();
+				B = isCorrectPos(r, c, i * c, j + 1) ? A = pvectors.at(i * c + j + 1) : PVector();
+				break;
+			case 1:
+			case 5:
+				A = isCorrectPos(r, c, i * (c - 1), j + 1) ? A = pvectors.at(i * (c - 1) + j + 1) : PVector();
+				B = isCorrectPos(r, c, i * (c + 1), j - 1) ? A = pvectors.at(i * (c + 1) + j - 1) : PVector();
+				break;
+			case 2:
+			case 6:
+				A = isCorrectPos(r, c, i * (c - 1), j) ? A = pvectors.at(i * (c - 1) + j) : PVector();
+				B = isCorrectPos(r, c, i * (c + 1), j) ? A = pvectors.at(i * (c + 1) + j) : PVector();
+				break;
+			case 3:
+			case 7:
+				A = isCorrectPos(r, c, i * (c - 1), j - 1) ? A = pvectors.at(i * (c - 1) + j - 1) : PVector();
+				B = isCorrectPos(r, c, i * (c + 1), j + 1) ? A = pvectors.at(i * (c + 1) + j + 1) : PVector();
+				break;
+			}
+
+			out_image.data[i * r + j] = A.getMag() > C.getMag() || B.getMag() > C.getMag() ? 0 : temp.data[i * c + j];
+		}
+	}
+
+	max = max * 255;
+	min = min * 255;
+	//cout << "Min/Max: " << min << "/" << max << endl;
+
+	for (int i = 0; i < r; ++i) {
+		for (int j = 0; j < c; ++j) {
+			C = pvectors.at(i * c + j);
+			if (C.getMag() < min) //WEAK PIXEL
 				out_image.data[i * c + j] = 0;
 			else if (C.getMag() > max) //STRONG PIXEL, LEAVE IT
-				continue;
+				out_image.data[i * c + j] = 255;
 			else {
 				//Check neighbors
 				out_image.data[i * c + j] =
-					(isCorrectPos(r, c, i * c, j + 1) && C.getMag() > pvectors.at(i * c + j + 1).getMag() > max) ||
-					(isCorrectPos(r, c, i * c, j - 1) && C.getMag() > pvectors.at(i * c + j - 1).getMag() > max) ||
-					(isCorrectPos(r, c, i * (c + 1), j) && C.getMag() > pvectors.at(i * (c + 1) + j).getMag() > max) ||
-					(isCorrectPos(r, c, i * (c - 1), j) && C.getMag() > pvectors.at(i * (c - 1) + j).getMag() > max) ?
+					(isCorrectPos(r, c, i * c, j + 1) && pvectors.at(i * c + j + 1).getMag() > max) ||
+					(isCorrectPos(r, c, i * c, j - 1) && pvectors.at(i * c + j - 1).getMag() > max) ||
+					(isCorrectPos(r, c, i * (c + 1), j) && pvectors.at(i * (c + 1) + j).getMag() > max) ||
+					(isCorrectPos(r, c, i * (c - 1), j) && pvectors.at(i * (c - 1) + j).getMag() > max) ||
+
+					(isCorrectPos(r, c, i * (c - 1), j - 1) && pvectors.at(i * (c - 1) + j - 1).getMag() > max) ||
+					(isCorrectPos(r, c, i * (c - 1), j + 1) && pvectors.at(i * (c - 1) + j + 1).getMag() > max) ||
+					(isCorrectPos(r, c, i * (c + 1), j + 1) && pvectors.at(i * (c + 1) + j + 1).getMag() > max) ||
+					(isCorrectPos(r, c, i * (c + 1), j - 1) && pvectors.at(i * (c + 1) + j - 1).getMag() > max)
+					?
 					out_image.data[i * c + j] : 0;
 			}
-
 		}
 	}
-	imshow("After surpression", out_image);
+
+	for (int i = 0; i < r; ++i)
+		for (int j = 0; j < c; ++j)
+			if (i == 0 || i == r - 1)
+				out_image.data[i * c + j] = 0;
+
+
+	//imshow("After surpression", out_image);
+}
+
+static void on_trackbar_change(int, void* = 0)
+{
+	minVal = (double) silderMinVal / silderMax / 4.0;
+	maxVal = (double) silderMaxVal / silderMax / 4.0;
+	cout << "MinVal/MaxVal: " << minVal << " " << maxVal << endl;
+
 }
 
 int main()
 {
-    std::cout.sync_with_stdio(false);
+    namedWindow("Result", WINDOW_AUTOSIZE);
 
-    std::string imageNames[] = {
-		"Geneva.tif",
-		"norway.jpg",
-		"test.png",
-		"portrait.jpg",
-		"smallGradient.jpg",
-		"anime.jpg",
-		"IM23.tif",
-		"8by8.jpg"};
-    //string selectedFile = tinyfd_openFileDialog(
-    //	"Select Image", // NULL or ""
-    //	"", // NULL or ""
-    //	0, // 0
-    //	NULL, // NULL {"*.jpg","*.png"}
-    //	"pictures", // NULL | "image files"
-    //	0);
-    img = imread("C:/Users/Lord/source/repos/Tif/" + imageNames[5], 0);
-    //img = imread(selectedFile, 0);
-    changedImg = img.clone();
+	createTrackbar("Min Threshold", "Result", &silderMinVal, silderMax, on_trackbar_change);
+	createTrackbar("Max Threshold", "Result", &silderMaxVal, silderMax, on_trackbar_change);
+    switch (WORK_MODE) {
+    case 1: {
+        string imageNames[] = {
+            "Geneva.tif",
+            "norway.jpg",
+            "test.png",
+            "portrait.jpg",
+            "smallGradient.jpg",
+            "anime.jpg",
+            "IM23.tif",
+            "8by8.jpg",
+            "IM_CAT.png"
+        };
+        img = imread("C:/Users/Lord/source/repos/Tif/" + imageNames[5], 0);
+        changedImg = img.clone();
 
-    if (img.data == 0) // Check for invalid input
-    {
-        std::cout << "Could not open or find the image" << std::endl;
-        return -1;
+		std::cout << "Changed image dimensions : " << changedImg.cols << 'x' << changedImg.rows << std::endl;
+        CannyEdge(img, changedImg, 0.1, 0.3);
+		imshow("Result", changedImg);
+        waitKey(0);
+        system("pause");
+        break;
+    }
+    case 2: {
+        string selectedFile = tinyfd_openFileDialog(
+            "Select Image", // NULL or ""
+            "", // NULL or ""
+            0, // 0
+            NULL, // NULL {"*.jpg","*.png"}
+            "pictures", // NULL | "image files"
+            0);
+
+        img = imread(selectedFile, 0);
+		changedImg = img.clone();
+		std::cout << "Changed image dimensions : " << changedImg.cols << 'x' << changedImg.rows << std::endl;
+		CannyEdge(img, changedImg, 0.1, 0.3);
+		imshow("Result", changedImg);
+		waitKey(0);
+		system("pause");
+        break;
+    }
+    case 3: {
+		VideoCapture camera = VideoCapture(0, CAP_ANY);
+		if (!camera.isOpened()) {
+			std::cout << "ERROR: Could not open camera" << std::endl;
+			return 1;
+		}
+
+		for (;;) {
+
+			camera.read(img);
+			gsImg = img.clone();
+			cvtColor(img, gsImg, cv::COLOR_BGR2GRAY);
+			changedImg = gsImg.clone();
+			std::cout << "Changed image dimensions : " << changedImg.cols << 'x' << changedImg.rows << std::endl;
+			//CannyEdge(gsImg, changedImg, 0.1, 0.3);
+			parallel_for_(cv::Range(0, 8), pb::Parallel_process(gsImg, changedImg, minVal, maxVal, 8));
+
+
+
+
+			//for (int i = 0; i < gsImg.rows; ++i) {
+			//	for (int j = 0; j < gsImg.cols; ++j) {
+			//		gsImg.data[i * gsImg.cols + j] = gsImg.data[i * gsImg.cols + j] - changedImg.data[i * gsImg.cols + j] >= 0 ? gsImg.data[i * gsImg.cols + j] - changedImg.data[i * gsImg.cols + j] : 0;
+			//	}
+			//}
+
+
+
+			imshow("Result", gsImg);
+			// wait (10ms) for a key to be pressed
+			if (cv::waitKey(10) == 27)
+				break;
+		}
+        break;
+    }
     }
 
-    std::cout << "Original image dimensions : " << img.cols << 'x' << img.rows << std::endl;
 
-    namedWindow("Original", WINDOW_AUTOSIZE);
-    resizeWindow("Original", img.cols, img.rows);
-    imshow("Original", img);
-
-    CannyEdge(img, changedImg);
-
-    waitKey(0);
-    system("pause");
     return 0;
 }

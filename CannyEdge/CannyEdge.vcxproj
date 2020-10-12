@@ -163,7 +163,7 @@
     <ClCompile Include="tinyfiledialogs.c" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="CannyEdge.h" />
+    <ClInclude Include="PB.h" />
     <ClInclude Include="PVector.h" />
     <ClInclude Include="tinyfiledialogs.h" />
   </ItemGroup>
