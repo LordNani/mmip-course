@@ -159,9 +159,12 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="CannyEdge.cpp" />
+    <ClCompile Include="PVector.cpp" />
     <ClCompile Include="tinyfiledialogs.c" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="CannyEdge.h" />
+    <ClInclude Include="PVector.h" />
     <ClInclude Include="tinyfiledialogs.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
