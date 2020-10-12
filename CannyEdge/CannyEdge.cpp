@@ -1,4 +1,3 @@
-#include "CannyEdge.h"
 #include "PVector.h"
 #include "opencv2/imgproc.hpp"
 #include "tinyfiledialogs.h"
@@ -113,12 +112,12 @@ void CannyEdge(const Mat& in_image, Mat& out_image)
 
     for (int i = 0; i < r; ++i) {
         for (int j = 0; j < c; ++j) {
-			C = pvectors.at(i * r + j);
+			C = pvectors.at(i * c + j);
             dir = C.getDir();
 			
 			if (C.getMag() > max) {
 				max = C.getMag();
-				cout << "NEW MAX = " << max << endl;
+				//cout << "NEW MAX = " << max << endl;
 			}
 
             switch (dir) {
@@ -144,13 +143,31 @@ void CannyEdge(const Mat& in_image, Mat& out_image)
                 break;
             }
 
-			out_image.data[i * r + j] = A.getMag() > C.getMag() || B.getMag() > C.getMag() ? 0 : temp.data[i * r + j];
+			out_image.data[i * r + j] = A.getMag() > C.getMag() || B.getMag() > C.getMag() ? 0 : temp.data[i * c + j];
         }
     }
 
 	min = max * 0.1;
 	max = max * 0.5;
+	for (int i = 0; i < r; ++i) {
+		for (int j = 0; j < c; ++j) {
+			C = pvectors.at(i * c + j);
+			if (C.getMag() < min)  //WEAK PIXEL
+				out_image.data[i * c + j] = 0;
+			else if (C.getMag() > max) //STRONG PIXEL, LEAVE IT
+				continue;
+			else {
+				//Check neighbors
+				out_image.data[i * c + j] =
+					(isCorrectPos(r, c, i * c, j + 1) && C.getMag() > pvectors.at(i * c + j + 1).getMag() > max) ||
+					(isCorrectPos(r, c, i * c, j - 1) && C.getMag() > pvectors.at(i * c + j - 1).getMag() > max) ||
+					(isCorrectPos(r, c, i * (c + 1), j) && C.getMag() > pvectors.at(i * (c + 1) + j).getMag() > max) ||
+					(isCorrectPos(r, c, i * (c - 1), j) && C.getMag() > pvectors.at(i * (c - 1) + j).getMag() > max) ?
+					out_image.data[i * c + j] : 0;
+			}
 
+		}
+	}
 	imshow("After surpression", out_image);
 }
 
@@ -174,7 +191,7 @@ int main()
     //	NULL, // NULL {"*.jpg","*.png"}
     //	"pictures", // NULL | "image files"
     //	0);
-    img = imread("C:/Users/Lord/source/repos/Tif/" + imageNames[2], 0);
+    img = imread("C:/Users/Lord/source/repos/Tif/" + imageNames[5], 0);
     //img = imread(selectedFile, 0);
     changedImg = img.clone();
 
