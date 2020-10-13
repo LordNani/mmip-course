@@ -12,15 +12,16 @@
 using namespace cv;
 using namespace std;
 
-const int WORK_MODE = 3;
+const int WORK_MODE = 2;
 
 Mat img, changedImg, gsImg;
-const double GAUSS_SIGMA = 1;
+double GAUSS_SIGMA = 1;
 const double KOEF = 0.25;
 
-int silderMinVal = 0, silderMaxVal = 0;
+int sliderMinVal = 0, sliderMaxVal = 0,sliderSigmaVal = 0;
 double minVal = 0, maxVal = 0;
 int silderMax = 20;
+int silderSigmaMax = 10;
 
 
 void convolution(const Mat& in_image, const double* mask, int ksize, double koef, Mat& out_image)
@@ -82,6 +83,7 @@ void modifiedSobelOperator(const Mat& in_image, Mat& out_image, vector<PVector>&
 
     myGaussianBlur(in_image, blurredImg, 5, GAUSS_SIGMA);
     convolution(blurredImg, xMask, 3, KOEF, horizontalSobel);
+	imshow("SobolX", horizontalSobel);
     convolution(blurredImg, yMask, 3, KOEF, verticalSobel);
 
     for (int i = 0; i < imSize; ++i)
@@ -115,7 +117,7 @@ void CannyEdge(const Mat& in_image, Mat& out_image, double min, double max)
 
 	pvectors.resize(r * c);
 	modifiedSobelOperator(in_image, temp, pvectors);
-	//imshow("Before surpression", temp);
+	imshow("After Sobel", temp);
 
 	for (int i = 0; i < r; ++i) {
 		for (int j = 0; j < c; ++j) {
@@ -130,24 +132,26 @@ void CannyEdge(const Mat& in_image, Mat& out_image, double min, double max)
 				break;
 			case 1:
 			case 5:
-				A = isCorrectPos(r, c, i * (c - 1), j + 1) ? A = pvectors.at(i * (c - 1) + j + 1) : PVector();
-				B = isCorrectPos(r, c, i * (c + 1), j - 1) ? A = pvectors.at(i * (c + 1) + j - 1) : PVector();
+				A = isCorrectPos(r, c, (i - 1) * c, j + 1) ? A = pvectors.at((i - 1) * c + j + 1) : PVector();
+				B = isCorrectPos(r, c, (i + 1) * c, j - 1) ? A = pvectors.at((i + 1) * c + j - 1) : PVector();
 				break;
 			case 2:
 			case 6:
-				A = isCorrectPos(r, c, i * (c - 1), j) ? A = pvectors.at(i * (c - 1) + j) : PVector();
-				B = isCorrectPos(r, c, i * (c + 1), j) ? A = pvectors.at(i * (c + 1) + j) : PVector();
+				A = isCorrectPos(r, c, (i - 1) * c, j) ? A = pvectors.at((i - 1) * c + j) : PVector();
+				B = isCorrectPos(r, c, (i + 1) * c, j) ? A = pvectors.at((i + 1) * c + j) : PVector();
 				break;
 			case 3:
 			case 7:
-				A = isCorrectPos(r, c, i * (c - 1), j - 1) ? A = pvectors.at(i * (c - 1) + j - 1) : PVector();
-				B = isCorrectPos(r, c, i * (c + 1), j + 1) ? A = pvectors.at(i * (c + 1) + j + 1) : PVector();
+				A = isCorrectPos(r, c, (i - 1) * c, j - 1) ? A = pvectors.at((i - 1) * c + j - 1) : PVector();
+				B = isCorrectPos(r, c, (i + 1) * c, j + 1) ? A = pvectors.at((i + 1) * c + j + 1) : PVector();
 				break;
 			}
 
-			out_image.data[i * r + j] = A.getMag() > C.getMag() || B.getMag() > C.getMag() ? 0 : temp.data[i * c + j];
+			out_image.data[i * c + j] = A.getMag() > C.getMag() || B.getMag() > C.getMag() ? 0 : temp.data[i * c + j];
 		}
 	}
+
+	imshow("After threshold", out_image);
 
 	max = max * 255;
 	min = min * 255;
@@ -156,51 +160,57 @@ void CannyEdge(const Mat& in_image, Mat& out_image, double min, double max)
 	for (int i = 0; i < r; ++i) {
 		for (int j = 0; j < c; ++j) {
 			C = pvectors.at(i * c + j);
-			if (C.getMag() < min) //WEAK PIXEL
+			if (C.getMag() < min) //USELESS PIXEL
 				out_image.data[i * c + j] = 0;
 			else if (C.getMag() > max) //STRONG PIXEL, LEAVE IT
 				out_image.data[i * c + j] = 255;
-			else {
-				//Check neighbors
-				out_image.data[i * c + j] =
-					(isCorrectPos(r, c, i * c, j + 1) && pvectors.at(i * c + j + 1).getMag() > max) ||
-					(isCorrectPos(r, c, i * c, j - 1) && pvectors.at(i * c + j - 1).getMag() > max) ||
-					(isCorrectPos(r, c, i * (c + 1), j) && pvectors.at(i * (c + 1) + j).getMag() > max) ||
-					(isCorrectPos(r, c, i * (c - 1), j) && pvectors.at(i * (c - 1) + j).getMag() > max) ||
-
-					(isCorrectPos(r, c, i * (c - 1), j - 1) && pvectors.at(i * (c - 1) + j - 1).getMag() > max) ||
-					(isCorrectPos(r, c, i * (c - 1), j + 1) && pvectors.at(i * (c - 1) + j + 1).getMag() > max) ||
-					(isCorrectPos(r, c, i * (c + 1), j + 1) && pvectors.at(i * (c + 1) + j + 1).getMag() > max) ||
-					(isCorrectPos(r, c, i * (c + 1), j - 1) && pvectors.at(i * (c + 1) + j - 1).getMag() > max)
-					?
-					out_image.data[i * c + j] : 0;
-			}
+			else //WEAK PIXEL
+				out_image.data[i * c + j] = 127;
 		}
 	}
 
 	for (int i = 0; i < r; ++i)
 		for (int j = 0; j < c; ++j)
-			if (i == 0 || i == r - 1)
-				out_image.data[i * c + j] = 0;
+			if (out_image.data[i * c + j] == 127)
+				if ((isCorrectPos(r, c, i * c, j + 1) && pvectors.at(i * c + j + 1).getMag() > max) ||
+					(isCorrectPos(r, c, i * c, j - 1) && pvectors.at(i * c + j - 1).getMag() > max) ||
+					(isCorrectPos(r, c, (i + 1) * c, j) && pvectors.at((i + 1) * c + j).getMag() > max) ||
+					(isCorrectPos(r, c, (i - 1) * c, j) && pvectors.at((i - 1) * c + j).getMag() > max) ||
 
+					(isCorrectPos(r, c, (i - 1) * c, j - 1) && pvectors.at((i - 1) * c + j - 1).getMag() > max) ||
+					(isCorrectPos(r, c, (i - 1) * c, j + 1) && pvectors.at((i - 1) * c + j + 1).getMag() > max) ||
+					(isCorrectPos(r, c, (i + 1) * c, j + 1) && pvectors.at((i + 1) * c + j + 1).getMag() > max) ||
+					(isCorrectPos(r, c, (i + 1) * c, j - 1) && pvectors.at((i + 1) * c + j - 1).getMag() > max))
+				{
+					out_image.data[i * c + j] = 255;
+				}
+				else
+					out_image.data[i * c + j] = 0;
 
-	//imshow("After surpression", out_image);
 }
 
 static void on_trackbar_change(int, void* = 0)
 {
-	minVal = (double) silderMinVal / silderMax / 4.0;
-	maxVal = (double) silderMaxVal / silderMax / 4.0;
+	minVal = (double)sliderMinVal / silderMax / 4.0;
+	maxVal = (double)sliderMaxVal / silderMax / 4.0;
+	GAUSS_SIGMA = (double)sliderSigmaVal / silderSigmaMax;
 	cout << "MinVal/MaxVal: " << minVal << " " << maxVal << endl;
+	cout << "Gauss " << GAUSS_SIGMA  << endl;
 
+	if (WORK_MODE == 1 || WORK_MODE == 2) {
+		CannyEdge(img, changedImg, minVal, maxVal);
+		imshow("Result", changedImg);
+		createTrackbar("Sigma", "Result", &sliderSigmaVal, silderSigmaMax, on_trackbar_change);
+		resizeWindow("Result", Size(changedImg.cols * 2, changedImg.rows));
+	}
 }
 
 int main()
 {
     namedWindow("Result", WINDOW_AUTOSIZE);
 
-	createTrackbar("Min Threshold", "Result", &silderMinVal, silderMax, on_trackbar_change);
-	createTrackbar("Max Threshold", "Result", &silderMaxVal, silderMax, on_trackbar_change);
+	createTrackbar("Min Threshold", "Result", &sliderMinVal, silderMax, on_trackbar_change);
+	createTrackbar("Max Threshold", "Result", &sliderMaxVal, silderMax, on_trackbar_change);
     switch (WORK_MODE) {
     case 1: {
         string imageNames[] = {
@@ -218,7 +228,7 @@ int main()
         changedImg = img.clone();
 
 		std::cout << "Changed image dimensions : " << changedImg.cols << 'x' << changedImg.rows << std::endl;
-        CannyEdge(img, changedImg, 0.1, 0.3);
+        CannyEdge(img, changedImg, 0.1, 0.2);
 		imshow("Result", changedImg);
         waitKey(0);
         system("pause");
@@ -236,7 +246,7 @@ int main()
         img = imread(selectedFile, 0);
 		changedImg = img.clone();
 		std::cout << "Changed image dimensions : " << changedImg.cols << 'x' << changedImg.rows << std::endl;
-		CannyEdge(img, changedImg, 0.1, 0.3);
+		CannyEdge(img, changedImg, 0.1, 0.2);
 		imshow("Result", changedImg);
 		waitKey(0);
 		system("pause");
@@ -255,22 +265,23 @@ int main()
 			gsImg = img.clone();
 			cvtColor(img, gsImg, cv::COLOR_BGR2GRAY);
 			changedImg = gsImg.clone();
-			std::cout << "Changed image dimensions : " << changedImg.cols << 'x' << changedImg.rows << std::endl;
-			//CannyEdge(gsImg, changedImg, 0.1, 0.3);
-			parallel_for_(cv::Range(0, 8), pb::Parallel_process(gsImg, changedImg, minVal, maxVal, 8));
+			//std::cout << "Changed image dimensions : " << changedImg.cols << 'x' << changedImg.rows << std::endl;
+			parallel_for_(cv::Range(0, 4), pb::Parallel_process(gsImg, changedImg, minVal, maxVal, 4));
 
 
 
-
-			//for (int i = 0; i < gsImg.rows; ++i) {
-			//	for (int j = 0; j < gsImg.cols; ++j) {
-			//		gsImg.data[i * gsImg.cols + j] = gsImg.data[i * gsImg.cols + j] - changedImg.data[i * gsImg.cols + j] >= 0 ? gsImg.data[i * gsImg.cols + j] - changedImg.data[i * gsImg.cols + j] : 0;
-			//	}
-			//}
+			//subtract(gsImg, changedImg, gsImg);
 
 
+			/*for (int i = 0; i < gsImg.rows; ++i) {
+				for (int j = 0; j < gsImg.cols; ++j) {
+					gsImg.data[i * gsImg.cols + j] = gsImg.data[i * gsImg.cols + j] - changedImg.data[i * gsImg.cols + j] >= 0 ? gsImg.data[i * gsImg.cols + j] - changedImg.data[i * gsImg.cols + j] : 0;
+				}
+			}*/
 
-			imshow("Result", gsImg);
+
+
+			imshow("Result", changedImg);
 			// wait (10ms) for a key to be pressed
 			if (cv::waitKey(10) == 27)
 				break;
