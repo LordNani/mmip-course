@@ -32,7 +32,7 @@
     <ClInclude Include="PVector.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="CannyEdge.h">
+    <ClInclude Include="PB.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
