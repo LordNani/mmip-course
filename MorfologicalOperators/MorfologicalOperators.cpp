@@ -93,15 +93,15 @@ static void on_trackbar_change(int, void* = 0)
 		FONT_HERSHEY_SIMPLEX, 0.9, 220, 2);
 
 
-	putText(stackedImg,"Diluted", Point(stackedImg.cols* 3 / 6, 30),
+	putText(stackedImg,"Eroded", Point(stackedImg.cols* 3 / 6, 30),
 		FONT_HERSHEY_SIMPLEX, 0.9, 220, 2);
 
-	putText(stackedImg, "Eroded", Point(stackedImg.cols * 5 / 6, 30),
+	putText(stackedImg, "Diluted", Point(stackedImg.cols * 5 / 6, 30),
 		FONT_HERSHEY_SIMPLEX, 0.9, 220, 2);
 	imshow("Result", stackedImg);
 }
 
-const int WORK_MODE = 3;
+const int WORK_MODE = 2;
 
 int main()
 {
