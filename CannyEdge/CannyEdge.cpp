@@ -3,7 +3,6 @@
 #include "tinyfiledialogs.h"
 #include <corecrt_math_defines.h>
 #include <iostream>
-#include <iterator>
 #include <math.h>
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
@@ -12,7 +11,7 @@
 using namespace cv;
 using namespace std;
 
-const int WORK_MODE = 2;
+const int WORK_MODE = 3;
 
 Mat img, changedImg, gsImg;
 double GAUSS_SIGMA = 1;
@@ -83,13 +82,12 @@ void modifiedSobelOperator(const Mat& in_image, Mat& out_image, vector<PVector>&
 
     myGaussianBlur(in_image, blurredImg, 5, GAUSS_SIGMA);
     convolution(blurredImg, xMask, 3, KOEF, horizontalSobel);
-	imshow("SobolX", horizontalSobel);
     convolution(blurredImg, yMask, 3, KOEF, verticalSobel);
 
     for (int i = 0; i < imSize; ++i)
         vecs.at(i) = PVector(horizontalSobel.data[i], verticalSobel.data[i]);
-
-    //imshow("Horizontal Sobel", horizontalSobel);
+	if (WORK_MODE != 3)
+		imshow("Horizontal Sobel", horizontalSobel);
     //imshow("Vertical Sobel", verticalSobel);
     for (int i = 0; i < imSize; ++i) {
         out_image.data[i] = sqrt(pow(verticalSobel.data[i], 2) + pow(horizontalSobel.data[i], 2));
@@ -117,7 +115,8 @@ void CannyEdge(const Mat& in_image, Mat& out_image, double min, double max)
 
 	pvectors.resize(r * c);
 	modifiedSobelOperator(in_image, temp, pvectors);
-	imshow("After Sobel", temp);
+	if (WORK_MODE != 3)
+		imshow("After Sobel", temp);
 
 	for (int i = 0; i < r; ++i) {
 		for (int j = 0; j < c; ++j) {
@@ -150,12 +149,11 @@ void CannyEdge(const Mat& in_image, Mat& out_image, double min, double max)
 			out_image.data[i * c + j] = A.getMag() > C.getMag() || B.getMag() > C.getMag() ? 0 : temp.data[i * c + j];
 		}
 	}
-
-	imshow("After threshold", out_image);
+	if (WORK_MODE != 3)
+		imshow("After threshold", out_image);
 
 	max = max * 255;
 	min = min * 255;
-	//cout << "Min/Max: " << min << "/" << max << endl;
 
 	for (int i = 0; i < r; ++i) {
 		for (int j = 0; j < c; ++j) {
@@ -197,11 +195,11 @@ static void on_trackbar_change(int, void* = 0)
 	cout << "MinVal/MaxVal: " << minVal << " " << maxVal << endl;
 	cout << "Gauss " << GAUSS_SIGMA  << endl;
 
-	if (WORK_MODE == 1 || WORK_MODE == 2) {
+	if (WORK_MODE != 3) {
 		CannyEdge(img, changedImg, minVal, maxVal);
 		imshow("Result", changedImg);
 		createTrackbar("Sigma", "Result", &sliderSigmaVal, silderSigmaMax, on_trackbar_change);
-		resizeWindow("Result", Size(changedImg.cols * 2, changedImg.rows));
+		resizeWindow("Result", Size(changedImg.cols * 1.5, changedImg.rows));
 	}
 }
 
@@ -266,7 +264,7 @@ int main()
 			cvtColor(img, gsImg, cv::COLOR_BGR2GRAY);
 			changedImg = gsImg.clone();
 			//std::cout << "Changed image dimensions : " << changedImg.cols << 'x' << changedImg.rows << std::endl;
-			parallel_for_(cv::Range(0, 4), pb::Parallel_process(gsImg, changedImg, minVal, maxVal, 4));
+			parallel_for_(cv::Range(0, 8), pb::Parallel_process(gsImg, changedImg, minVal, maxVal, 8,0.75));
 
 
 

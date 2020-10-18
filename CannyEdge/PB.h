@@ -17,7 +17,7 @@ private:
     double max = 0, min = 0;
     int diff = 1;
 
-    const double GAUSS_SIGMA = 1;
+    double GAUSS_SIGMA = 1;
     const double KOEF = 0.25;
 
     const void convolution(Mat& in_image, const double* mask, int ksize, double koef, Mat& out_image) const
@@ -191,12 +191,12 @@ private:
     }
 
 public:
-    Parallel_process(cv::Mat& inputImgage, cv::Mat& outImage, double mn, double mx, int df)
+    Parallel_process(cv::Mat& inputImgage, cv::Mat& outImage, double mn, double mx, int df,double gs)
         : img(inputImgage)
         , retVal(outImage)
         , min(mn)
         , max(mx)
-        , diff(df)
+        , diff(df),GAUSS_SIGMA(gs)
     {
     }
 
@@ -207,7 +207,11 @@ public:
             cv::Mat in(img, cv::Rect(0, (img.rows / diff) * i, img.cols, img.rows / diff));
             cv::Mat out(retVal, cv::Rect(0, (retVal.rows / diff) * i, retVal.cols, retVal.rows / diff));
             //std::cout << "One img : " << out.cols << 'x' << out.rows << std::endl;
-            CannyEdge(in, out, min, max);
+            //CannyEdge(in, out, min, max);
+			vector<PVector> pvectors;
+
+			pvectors.resize(in.rows * in.cols);
+			modifiedSobelOperator(in, out, pvectors);
 
         }
     }
