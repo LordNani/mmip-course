@@ -11,7 +11,7 @@
 using namespace cv;
 using namespace std;
 
-const int WORK_MODE = 3;
+const int WORK_MODE = 2;
 
 Mat img, changedImg, gsImg;
 double GAUSS_SIGMA = 1;
@@ -86,8 +86,8 @@ void modifiedSobelOperator(const Mat& in_image, Mat& out_image, vector<PVector>&
 
     for (int i = 0; i < imSize; ++i)
         vecs.at(i) = PVector(horizontalSobel.data[i], verticalSobel.data[i]);
-	if (WORK_MODE != 3)
-		imshow("Horizontal Sobel", horizontalSobel);
+	//if (WORK_MODE != 3)
+	//	imshow("Horizontal Sobel", horizontalSobel);
     //imshow("Vertical Sobel", verticalSobel);
     for (int i = 0; i < imSize; ++i) {
         out_image.data[i] = sqrt(pow(verticalSobel.data[i], 2) + pow(horizontalSobel.data[i], 2));
@@ -115,8 +115,8 @@ void CannyEdge(const Mat& in_image, Mat& out_image, double min, double max)
 
 	pvectors.resize(r * c);
 	modifiedSobelOperator(in_image, temp, pvectors);
-	if (WORK_MODE != 3)
-		imshow("After Sobel", temp);
+	//if (WORK_MODE != 3)
+	//	imshow("After Sobel", temp);
 
 	for (int i = 0; i < r; ++i) {
 		for (int j = 0; j < c; ++j) {
@@ -149,8 +149,8 @@ void CannyEdge(const Mat& in_image, Mat& out_image, double min, double max)
 			out_image.data[i * c + j] = A.getMag() > C.getMag() || B.getMag() > C.getMag() ? 0 : temp.data[i * c + j];
 		}
 	}
-	if (WORK_MODE != 3)
-		imshow("After threshold", out_image);
+	//if (WORK_MODE != 3)
+	//	imshow("After threshold", out_image);
 
 	max = max * 255;
 	min = min * 255;
@@ -265,19 +265,6 @@ int main()
 			changedImg = gsImg.clone();
 			//std::cout << "Changed image dimensions : " << changedImg.cols << 'x' << changedImg.rows << std::endl;
 			parallel_for_(cv::Range(0, 8), pb::Parallel_process(gsImg, changedImg, minVal, maxVal, 8,0.75));
-
-
-
-			//subtract(gsImg, changedImg, gsImg);
-
-
-			/*for (int i = 0; i < gsImg.rows; ++i) {
-				for (int j = 0; j < gsImg.cols; ++j) {
-					gsImg.data[i * gsImg.cols + j] = gsImg.data[i * gsImg.cols + j] - changedImg.data[i * gsImg.cols + j] >= 0 ? gsImg.data[i * gsImg.cols + j] - changedImg.data[i * gsImg.cols + j] : 0;
-				}
-			}*/
-
-
 
 			imshow("Result", changedImg);
 			// wait (10ms) for a key to be pressed
