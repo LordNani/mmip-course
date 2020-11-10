@@ -28,6 +28,11 @@ bool isCorrectPos(int rows, int cols, int posY, int posX)
 		return true;
 }
 
+void mySubtract(const Mat& in1, const Mat& in2, Mat& out) {
+	for (int i = 0; i < in1.cols * in1.rows;i++) 
+		out.data[i] = abs(in1.data[i] - in2.data[i]);
+	
+}
 
 void ToBinary(const Mat& in, Mat& out, int threshold = 127) {
 	for (int i = 0; i < in.rows; i++)
@@ -92,13 +97,16 @@ static void on_trackbar_change(int, void* = 0)
 	putText(stackedImg, "Binary", Point(stackedImg.cols * 1 / 6, 30),
 		FONT_HERSHEY_SIMPLEX, 0.9, 220, 2);
 
-
-	putText(stackedImg,"Eroded", Point(stackedImg.cols* 3 / 6, 30),
+	putText(stackedImg,"Diluted", Point(stackedImg.cols* 3 / 6, 30),
 		FONT_HERSHEY_SIMPLEX, 0.9, 220, 2);
 
-	putText(stackedImg, "Diluted", Point(stackedImg.cols * 5 / 6, 30),
+	putText(stackedImg, "Eroded", Point(stackedImg.cols * 5 / 6, 30),
 		FONT_HERSHEY_SIMPLEX, 0.9, 220, 2);
 	imshow("Result", stackedImg);
+
+
+	mySubtract(changedImg, binImg, gsImg);
+	imshow("edge", gsImg);
 }
 
 const int WORK_MODE = 2;
@@ -123,6 +131,7 @@ int main()
 		changedImg = img.clone();
 		changedImgTwo = img.clone();
 		binImg = img.clone();
+		gsImg = binImg.clone();
 		on_trackbar_change(0);
 		waitKey(0);
 		system("pause");
